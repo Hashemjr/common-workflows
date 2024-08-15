@@ -1,0 +1,71 @@
+name: Open PR
+
+on:
+  push:
+    branches:
+      main
+
+jobs:
+  runs-on: ubuntu-latest
+  
+  steps:
+    - name: checkout repo
+      uses: actions/checkout@v4
+
+    - name: github app token
+      uses: actions/github-script@v6
+      id: github-script
+      with:
+        script: |
+          const { Octokit } = require("@octokit/core");
+          const { createAppAuth } = require("@octokit/auth-app");
+          
+          const appId = process.env.GITHUB_APP_ID;
+          const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+          const octokit = new Octokit({
+            auth: createAppAuth({
+              appId,
+              privateKey,
+              clientId: process.env.GITHUB_APP_CLIENT_ID,
+              clientSecret: process.env.GITHUB_APP_CLIENT_SECRET,
+            }).token,
+          });
+          
+          const repoOwner = 'Hashemjr';
+          const repoName = 'gold';
+          const branchName = 'feature-branch';
+          
+          // create new branch
+          await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
+            owner: repoOwner,
+            repo: repoName,
+            ref: `refs/heads/${branchName}`,
+            sha: 'cf8833d' // You should use the SHA of the commit you want to branch from
+          });
+          
+          // Create a pull request
+          const pullRequest = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
+            owner: repoOwner,
+            repo: repoName,
+            title: 'Automated PR',
+            head: branchName,
+            base: 'main', // Base branch
+            body: 'This is an automated PR created by GitHub Actions'
+          });
+          
+          // Merge the pull request
+          await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
+            owner: repoOwner,
+            repo: repoName,
+            pull_number: pullRequest.data.number,
+            merge_method: 'merge'
+          });
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_APP_CLIENT_ID: ${{ secrets.GITHUB_APP_CLIENT_ID }}
+          GITHUB_APP_CLIENT_SECRET: ${{ secrets.GITHUB_APP_CLIENT_SECRET }}
+
+    - name: Display PR status
+      run: echo "PR has been created and merged!"
+
