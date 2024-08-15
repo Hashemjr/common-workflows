@@ -3,57 +3,67 @@ name: Open PR
 on:
   push:
     branches:
-      main
+      - main
 
 jobs:
   create-PR:
     runs-on: ubuntu-latest
-  
+
     steps:
-      - name: checkout repo
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: github app token
+      - name: GitHub app token
         uses: actions/github-script@v6
         id: github-script
         with:
           script: |
-            const { Octokit } = require("@octokit/core");
-            const { createAppAuth } = require("@octokit/auth-app");
-          
-            const appId = process.env.GITHUB_APP_ID;
+            const { Octokit } = require('@octokit/core');
+            const { createAppAuth } = require('@octokit/auth-app');
+
+            const appId = process.env.APP_ID;
             const privateKey = process.env.APP_PRIVATE_KEY;
-            const octokit = new Octokit({
-              auth: createAppAuth({
-                appId,
-                privateKey,
-                clientId: process.env.APP_CLIENT_ID,
-                clientSecret: process.env.APP_CLIENT_SECRET,
-              }).token,
+            const clientId = process.env.APP_CLIENT_ID;
+            const clientSecret = process.env.APP_CLIENT_SECRET;
+
+            const auth = createAppAuth({
+              appId,
+              privateKey,
+              clientId,
+              clientSecret
             });
-          
+
+            const { token } = await auth({ type: 'app' });
+
+            const octokit = new Octokit({ auth: token });
+
             const repoOwner = 'Hashemjr';
             const repoName = 'gold';
             const branchName = 'feature-branch';
-          
-            // create new branch
+
+            // Create new branch
+            const { data: { object: { sha } } } = await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/main', {
+              owner: repoOwner,
+              repo: repoName
+            });
+
             await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
               owner: repoOwner,
               repo: repoName,
               ref: `refs/heads/${branchName}`,
-              sha: 'cf8833d' // You should use the SHA of the commit you want to branch from
+              sha
             });
-          
+
             // Create a pull request
             const pullRequest = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
               owner: repoOwner,
               repo: repoName,
               title: 'Automated PR',
               head: branchName,
-              base: 'main', // Base branch
+              base: 'main',
               body: 'This is an automated PR created by GitHub Actions'
             });
-          
+
             // Merge the pull request
             await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
               owner: repoOwner,
