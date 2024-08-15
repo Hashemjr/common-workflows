@@ -51,7 +51,7 @@ jobs:
               owner: repoOwner,
               repo: repoName,
               ref: `refs/heads/${branchName}`,
-              sha
+              sha: 'cf8833dfe4425467868a30a5b3724ccf19522ad7'
             });
 
             // Create a pull request
