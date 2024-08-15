@@ -62,10 +62,10 @@ jobs:
               merge_method: 'merge'
             });
           env:
-            APP_ID: ${{ secrets.GITHUB_APP_ID }}
-            APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
-            APP_CLIENT_ID: ${{ secrets.GITHUB_APP_CLIENT_ID }}
-            APP_CLIENT_SECRET: ${{ secrets.GITHUB_APP_CLIENT_SECRET }}
+            APP_ID: ${{ secrets.APP_ID }}
+            APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+            APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+            APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
 
       - name: Display PR status
         run: echo "PR has been created and merged!"
