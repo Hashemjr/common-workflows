@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: GitHub app token
         uses: actions/github-script@v6
         id: github-script
@@ -41,36 +38,59 @@ jobs:
             const repoName = 'gold';
             const branchName = 'feature-branch';
 
-            // Create new branch
-            const { data: { object: { sha } } } = await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/main', {
-              owner: repoOwner,
-              repo: repoName
-            });
+            try {
+              // Get the SHA of the main branch
+              const { data: mainBranch } = await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/main', {
+                owner: repoOwner,
+                repo: repoName
+              });
+              const sha = mainBranch.object.sha;
 
-            await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
-              owner: repoOwner,
-              repo: repoName,
-              ref: `refs/heads/${branchName}`,
-              sha: 'cf8833dfe4425467868a30a5b3724ccf19522ad7'
-            });
+              // Check if the branch already exists
+              try {
+                await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/{branch}', {
+                  owner: repoOwner,
+                  repo: repoName,
+                  branch: branchName
+                });
+                console.log(`Branch ${branchName} already exists.`);
+                return;
+              } catch (e) {
+                if (e.status !== 404) throw e;
+                // Branch does not exist, proceed to create it
+              }
 
-            // Create a pull request
-            const pullRequest = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
-              owner: repoOwner,
-              repo: repoName,
-              title: 'Automated PR',
-              head: branchName,
-              base: 'main',
-              body: 'This is an automated PR created by GitHub Actions'
-            });
+              // Create new branch
+              await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
+                owner: repoOwner,
+                repo: repoName,
+                ref: `refs/heads/${branchName}`,
+                sha: sha
+              });
 
-            // Merge the pull request
-            await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
-              owner: repoOwner,
-              repo: repoName,
-              pull_number: pullRequest.data.number,
-              merge_method: 'merge'
-            });
+              // Create a pull request
+              const { data: pullRequest } = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
+                owner: repoOwner,
+                repo: repoName,
+                title: 'Automated PR',
+                head: branchName,
+                base: 'main',
+                body: 'This is an automated PR created by GitHub Actions'
+              });
+
+              // Merge the pull request
+              await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
+                owner: repoOwner,
+                repo: repoName,
+                pull_number: pullRequest.number,
+                merge_method: 'merge'
+              });
+
+              console.log("PR has been created and merged!");
+            } catch (error) {
+              console.error("An error occurred:", error);
+              process.exit(1); // Fail the job if any error occurs
+            }
           env:
             APP_ID: ${{ secrets.APP_ID }}
             APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -78,5 +98,5 @@ jobs:
             APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
 
       - name: Display PR status
-        run: echo "PR has been created and merged!"
+        run: echo "PR process completed!"
 
