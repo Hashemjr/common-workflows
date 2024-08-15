@@ -91,11 +91,11 @@ jobs:
               console.error("An error occurred:", error);
               process.exit(1); // Fail the job if any error occurs
             }
-        env:
-          APP_ID: ${{ secrets.APP_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-          APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
+          env:
+            APP_ID: ${{ secrets.APP_ID }}
+            APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+            APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+            APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
 
       - name: Display PR status
         run: echo "PR process completed!"
