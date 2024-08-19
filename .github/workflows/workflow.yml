@@ -22,7 +22,7 @@ jobs:
           GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           REPO_NAME: gold
           BRANCH_NAME: update-branch
-          PR_TITLE: "Automated PR from common-workflows"
+          PR_TITLE: "Automated PR from common-workflow"
           PR_BODY: "This PR was created automatically by GitHub Actions."
         run: |
           # Get a JWT token
