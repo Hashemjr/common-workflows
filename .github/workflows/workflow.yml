@@ -16,22 +16,28 @@ jobs:
         run: |
           sudo apt-get install -y jq curl
 
+      - name: Set up Git
+        run: |
+          git config --global user.email "marwanreda22@gmail.com"
+          git config --global user.name "Hashemjr"
+
       - name: Create a PR on the gold repo
         env:
           GITHUB_APP_ID: ${{ secrets.APP_ID }}
           GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          APP_INSTALLATION_ID: ${{ secrets.APP_INSTALLATION_ID }}
           REPO_NAME: gold
           BRANCH_NAME: update-branch
-          PR_TITLE: "Automated PR from common-workflow"
+          PR_TITLE: "Automated PR from common-workflows"
           PR_BODY: "This PR was created automatically by GitHub Actions."
         run: |
           # Get a JWT token
           JWT=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d '{"iat":'$(date +%s)',"exp":'$(($(date +%s) + 600))',"iss":"'$APP_ID'"}' \
+            -d '{"iat":'$(date +%s)',"exp":'$(($(date +%s) + 600))',"iss":"'$GITHUB_APP_ID'"}' \
             https://api.github.com/app/installations/$APP_INSTALLATION_ID/access_tokens \
-            -H "Authorization: Bearer $(cat ${GITHUB_APP_PRIVATE_KEY})" | jq -r .token)
+            -H "Authorization: Bearer $(echo $APP_PRIVATE_KEY | tr -d '\n')" | jq -r .token)
 
           # Create a new branch and commit changes
           git checkout -b $BRANCH_NAME
@@ -43,16 +49,16 @@ jobs:
           git push origin $BRANCH_NAME
 
           # Create a PR
-          curl -s -X POST \
+          PR_NUMBER=$(curl -s -X POST \
             -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github.v3+json" \
             -d '{"title":"'$PR_TITLE'","body":"'$PR_BODY'","head":"'$BRANCH_NAME'","base":"main"}' \
-            https://api.github.com/repos/$REPO_NAME/pulls
+            https://api.github.com/repos/$REPO_NAME/pulls | jq -r .number)
 
           # Merge the PR
           curl -s -X PUT \
             -H "Authorization: Bearer $JWT" \
             -H "Accept: application/vnd.github.v3+json" \
             -d '{"merge_method":"merge"}' \
-            https://api.github.com/repos/$REPO_NAME/pulls/1/merge
+            https://api.github.com/repos/$REPO_NAME/pulls/$PR_NUMBER/merge
 
