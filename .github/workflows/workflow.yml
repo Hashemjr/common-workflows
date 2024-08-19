@@ -3,7 +3,7 @@ name: Open and Merge PR
 on:
   push:
     branches:
-      - main  # Or the default branch for common-workflows
+      - main  # Or the default branch for common-workflow
 
 jobs:
   open-pr:
