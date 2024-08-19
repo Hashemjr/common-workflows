@@ -18,8 +18,8 @@ jobs:
 
       - name: Create a PR on the gold repo
         env:
-          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
-          GITHUB_APP_PRIVATE_KEY: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          GITHUB_APP_ID: ${{ secrets.APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
           REPO_NAME: gold
           BRANCH_NAME: update-branch
           PR_TITLE: "Automated PR from common-workflows"
@@ -29,8 +29,8 @@ jobs:
           JWT=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -d '{"iat":'$(date +%s)',"exp":'$(($(date +%s) + 600))',"iss":"'$GITHUB_APP_ID'"}' \
-            https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens \
+            -d '{"iat":'$(date +%s)',"exp":'$(($(date +%s) + 600))',"iss":"'$APP_ID'"}' \
+            https://api.github.com/app/installations/$APP_INSTALLATION_ID/access_tokens \
             -H "Authorization: Bearer $(cat ${GITHUB_APP_PRIVATE_KEY})" | jq -r .token)
 
           # Create a new branch and commit changes
