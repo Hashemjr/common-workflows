@@ -1,102 +1,33 @@
-name: Open PR
+name: Open and Merge PR
 
 on:
   push:
     branches:
-      - main
+      - main  # Or the default branch for common-workflows
 
 jobs:
-  create-PR:
+  open-pr:
     runs-on: ubuntu-latest
-
     steps:
-      - name: GitHub app token
-        uses: actions/github-script@v6
-        id: github-script
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create PR on gold repo
+        uses: peter-evans/create-pull-request@v4
         with:
-          script: |
-            const { Octokit } = require('@octokit/core');
-            const { createAppAuth } = require('@octokit/auth-app');
+          token: ${{ secrets.APP_TOKEN }}
+          repository: Hashemjr/gold
+          title: 'Automated PR'
+          body: 'This is an automated PR created by GitHub Actions.'
+          base: master
+          head: new-feature-branch
+          commit-message: 'Add new feature branch'
 
-            const appId = process.env.APP_ID;
-            const privateKey = process.env.APP_PRIVATE_KEY;
-            const clientId = process.env.APP_CLIENT_ID;
-            const clientSecret = process.env.APP_CLIENT_SECRET;
-
-            const auth = createAppAuth({
-              appId,
-              privateKey,
-              clientId,
-              clientSecret
-            });
-
-            const { token } = await auth({ type: 'app' });
-
-            const octokit = new Octokit({ auth: token });
-
-            const repoOwner = 'Hashemjr';
-            const repoName = 'gold';
-            const branchName = 'feature-branch';
-
-            try {
-              // Get the SHA of the main branch
-              const { data: mainBranch } = await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/main', {
-                owner: repoOwner,
-                repo: repoName
-              });
-              const sha = mainBranch.object.sha;
-
-              // Check if the branch already exists
-              try {
-                await octokit.request('GET /repos/{owner}/{repo}/git/refs/heads/{branch}', {
-                  owner: repoOwner,
-                  repo: repoName,
-                  branch: branchName
-                });
-                console.log(`Branch ${branchName} already exists.`);
-                return;
-              } catch (e) {
-                if (e.status !== 404) throw e;
-                // Branch does not exist, proceed to create it
-              }
-
-              // Create new branch
-              await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
-                owner: repoOwner,
-                repo: repoName,
-                ref: `refs/heads/${branchName}`,
-                sha: sha
-              });
-
-              // Create a pull request
-              const { data: pullRequest } = await octokit.request('POST /repos/{owner}/{repo}/pulls', {
-                owner: repoOwner,
-                repo: repoName,
-                title: 'Automated PR',
-                head: branchName,
-                base: 'main',
-                body: 'This is an automated PR created by GitHub Actions'
-              });
-
-              // Merge the pull request
-              await octokit.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', {
-                owner: repoOwner,
-                repo: repoName,
-                pull_number: pullRequest.number,
-                merge_method: 'merge'
-              });
-
-              console.log("PR has been created and merged!");
-            } catch (error) {
-              console.error("An error occurred:", error);
-              process.exit(1); // Fail the job if any error occurs
-            }
-          env:
-            APP_ID: ${{ secrets.APP_ID }}
-            APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-            APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-            APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
-
-      - name: Display PR status
-        run: echo "PR process completed!"
+      - name: Merge PR
+        uses: peter-evans/merge-pull-request@v4
+        with:
+          token: ${{ secrets.APP_TOKEN }}
+          repository: Hashemjr/gold
+          pull-request-number: ${{ steps.create-pr.outputs.pull-request-number }}
+          merge-method: merge
 
