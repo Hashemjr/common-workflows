@@ -13,21 +13,29 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Create PR on gold repo
-        uses: peter-evans/create-pull-request@v4
+        id: create-pr
+        uses: actions/github-script@v6
         with:
-          token: ${{ secrets.APP_TOKEN }}
-          repository: Hashemjr/gold
-          title: 'Automated PR'
-          body: 'This is an automated PR created by GitHub Actions.'
-          base: master
-          head: new-feature-branch
-          commit-message: 'Add new feature branch'
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.create({
+              owner: 'Hashemjr',
+              repo: 'gold',
+              title: 'Automated PR',
+              body: 'This is an automated PR created by GitHub Actions.',
+              base: 'master',
+              head: 'new-feature-branch'
+            });
+            return pullRequest.number;
 
       - name: Merge PR
-        uses: peter-evans/merge-pull-request@v4
+        uses: actions/github-script@v6
         with:
-          token: ${{ secrets.APP_TOKEN }}
-          repository: Hashemjr/gold
-          pull-request-number: ${{ steps.create-pr.outputs.pull-request-number }}
-          merge-method: merge
+          script: |
+            const pullNumber = parseInt('${{ steps.create-pr.outputs.result }}', 10);
+            await github.rest.pulls.merge({
+              owner: 'Hashemjr',
+              repo: 'gold',
+              pull_number: pullNumber,
+              merge_method: 'merge'
+            });
 
